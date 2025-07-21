@@ -1,19 +1,19 @@
 const express = require('express');
-const connectDB = require('./config/mongo');
+const connectDB = require('./config/mongo'); // Your MongoDB connection function
 const cors = require('cors');
-const { ObjectId } = require('mongodb');
 
 const app = express();
 
 // ✅ Middleware
-app.use(cors()); // Allow cross-origin requests (important for Wix)
+app.use(cors()); // Allows CORS (important for Wix)
 app.use(express.json());
 
-// ✅ Connect MongoDB
+// ✅ Connect MongoDB and define routes
 connectDB().then((db) => {
-  const chargers = db.collection('chargers');
+  const chargers = db.collection('chargers'); // For listing available chargers
+  const orders = db.collection('orders');     // For storing selected charger + user data
 
-  // ✅ Root test
+  // ✅ Test route
   app.get('/', (req, res) => {
     res.send('Backend running!');
   });
@@ -29,7 +29,34 @@ connectDB().then((db) => {
     }
   });
 
-  // ✅ You can add more routes here (e.g., session logging, payment status update, etc.)
+  // ✅ Save order with selected charger
+  app.post('/api/save-order', async (req, res) => {
+    try {
+      const { firstName, lastName, email, phone, charger, timestamp } = req.body;
+
+      if (!firstName || !lastName || !email || !phone || !charger) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+
+      const result = await orders.insertOne({
+        firstName,
+        lastName,
+        email,
+        phone,
+        charger,
+        timestamp: timestamp || new Date().toISOString()
+      });
+
+      res.status(200).json({ message: "Order saved", id: result.insertedId });
+    } catch (err) {
+      console.error("❌ Failed to save order:", err);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // ✅ Add other routes as needed
+}).catch((err) => {
+  console.error("❌ Failed to connect to MongoDB:", err);
 });
 
 // ✅ Start server
