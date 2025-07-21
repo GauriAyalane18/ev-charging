@@ -23,6 +23,7 @@ connectDB().then((db) => {
     try {
       const allChargers = await chargers.find({}).toArray();
       res.json(allChargers);
+      
     } catch (err) {
       console.error("❌ Failed to fetch chargers:", err);
       res.status(500).json({ error: "Internal server error" });
